@@ -1,0 +1,8 @@
+[
+  {"id":"atlas","name":"Atlas Components","facts":{"revenue_2024":180,"revenue_2025":216,"cost_of_sales_2025":135,"operating_income_2025":31,"current_assets_2025":112,"current_liabilities_2025":70,"total_debt_2025":54,"total_equity_2025":90}},
+  {"id":"boreal","name":"Boreal Software","facts":{"revenue_2024":72,"revenue_2025":90,"cost_of_sales_2025":27,"operating_income_2025":18,"current_assets_2025":88,"current_liabilities_2025":32,"total_debt_2025":25,"total_equity_2025":100}},
+  {"id":"cedar","name":"Cedar Logistics","facts":{"revenue_2024":125,"revenue_2025":120,"cost_of_sales_2025":96,"operating_income_2025":6,"current_assets_2025":45,"current_liabilities_2025":60,"total_debt_2025":84,"total_equity_2025":42}},
+  {"id":"delta","name":"Delta Foods","facts":{"revenue_2024":240,"revenue_2025":264,"cost_of_sales_2025":198,"operating_income_2025":22,"current_assets_2025":77,"current_liabilities_2025":55,"total_debt_2025":33,"total_equity_2025":110}},
+  {"id":"ember","name":"Ember Renewables","facts":{"revenue_2024":48,"revenue_2025":54,"cost_of_sales_2025":45,"operating_income_2025":-3,"current_assets_2025":36,"current_liabilities_2025":24,"total_debt_2025":130,"total_equity_2025":65}},
+  {"id":"fjord","name":"Fjord Retail","facts":{"revenue_2024":300,"revenue_2025":315,"cost_of_sales_2025":252,"operating_income_2025":12,"current_assets_2025":94,"current_liabilities_2025":125,"total_debt_2025":96,"total_equity_2025":80}}
+]
