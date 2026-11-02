@@ -1,0 +1,5 @@
+[
+  {"case_id":"atlas-gross_margin","value":"37.50","source_refs":["atlas:revenue_2025","atlas:cost_of_sales_2025"],"explanation":"(216 - 135) / 216 × 100 = 37.50%","abstained":false},
+  {"case_id":"atlas-revenue_growth","value":"25.00","source_refs":["atlas:revenue_2024","atlas:revenue_2025"],"explanation":"Incorrect denominator in a deliberately flawed answer.","abstained":false},
+  {"case_id":"atlas-operating_margin","value":"14.35","source_refs":["invented:document"],"explanation":"A deliberately incorrect citation.","abstained":false}
+]
