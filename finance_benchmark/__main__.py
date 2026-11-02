@@ -67,7 +67,7 @@ def main():
         predictions = json.loads(args.predictions.read_text(encoding="utf-8"))
         if not isinstance(predictions, list):
             parser.error("Prediction file must contain a JSON list")
-    report = evaluate(predictions)
+    report = evaluate(predictions, selected_cases=cases()[:args.limit] if args.command == "run" else None)
     args.output.mkdir(parents=True, exist_ok=True)
     (args.output / "predictions.json").write_text(json.dumps(predictions, indent=2) + "\n", encoding="utf-8")
     (args.output / "report.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
