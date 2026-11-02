@@ -91,7 +91,7 @@ def score_case(case, prediction):
             "needs_expert_review": needs_review}
 
 
-def evaluate(predictions):
+def evaluate(predictions, selected_cases=None):
     by_id = {}
     for prediction in predictions:
         if not isinstance(prediction, dict) or not isinstance(prediction.get("case_id"), str):
@@ -99,7 +99,7 @@ def evaluate(predictions):
         if prediction["case_id"] in by_id:
             raise ValueError(f"Duplicate case_id: {prediction['case_id']}")
         by_id[prediction["case_id"]] = prediction
-    all_cases = cases()
+    all_cases = cases() if selected_cases is None else selected_cases
     valid_ids = {case["case_id"] for case in all_cases}
     unknown = sorted(set(by_id) - valid_ids)
     if unknown:
