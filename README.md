@@ -23,6 +23,8 @@ python -m finance_benchmark evaluate examples/sample_predictions.json --output r
 
 The baseline copies gold arithmetic and citations as a **harness control**; its 100% result is not an AI performance claim. The sample yields errors and missing predictions by design. Reports are written to `results/report.json`, `results/report.md`, and `results/predictions.json` (or the chosen output directory).
 
+GitHub Actions runs these checks on every push and attaches an `evaluation-reports` artifact with both control and deliberately flawed sample outputs.
+
 ## Evaluate your own predictions
 
 Make a JSON list of objects with `case_id`, `value`, `source_refs`, `explanation`, and `abstained`; see `examples/sample_predictions.json`. Run:
