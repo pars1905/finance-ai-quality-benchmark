@@ -14,6 +14,12 @@ class BenchmarkTests(unittest.TestCase):
         report = evaluate([baseline_prediction(x) for x in items])
         self.assertEqual(report["strict_pass_rate"], 1)
 
+    def test_limited_run_uses_limited_denominator(self):
+        subset = cases()[:3]
+        report = evaluate([baseline_prediction(x) for x in subset], selected_cases=subset)
+        self.assertEqual(report["case_count"], 3)
+        self.assertEqual(report["strict_pass_rate"], 1)
+
     def test_wrong_value_and_right_sources_fail_separately(self):
         case = cases()[0]
         p = baseline_prediction(case)
