@@ -1,0 +1,60 @@
+import json
+import tempfile
+import unittest
+from pathlib import Path
+
+from finance_benchmark.core import baseline_prediction, cases, evaluate, score_case
+
+
+class BenchmarkTests(unittest.TestCase):
+    def test_30_cases_and_reference_control(self):
+        items = cases()
+        self.assertEqual(len(items), 30)
+        self.assertEqual(len({x["case_id"] for x in items}), 30)
+        report = evaluate([baseline_prediction(x) for x in items])
+        self.assertEqual(report["strict_pass_rate"], 1)
+
+    def test_wrong_value_and_right_sources_fail_separately(self):
+        case = cases()[0]
+        p = baseline_prediction(case)
+        p["value"] = "999"
+        result = score_case(case, p)
+        self.assertFalse(result["numeric_correct"])
+        self.assertTrue(result["sources_correct"])
+        self.assertEqual(result["error_codes"], ["incorrect_numeric_value"])
+
+    def test_correct_number_but_wrong_source_fails(self):
+        case = cases()[0]
+        p = baseline_prediction(case)
+        p["source_refs"] = ["invented:source"]
+        result = score_case(case, p)
+        self.assertTrue(result["numeric_correct"])
+        self.assertFalse(result["pass"])
+        p["source_refs"] = [["malformed"]]
+        self.assertFalse(score_case(case, p)["sources_correct"])
+
+    def test_malformed_and_missing_predictions(self):
+        case = cases()[0]
+        self.assertIn("missing_prediction", score_case(case, None)["error_codes"])
+        p = baseline_prediction(case)
+        p["value"] = "NaN"
+        self.assertFalse(score_case(case, p)["numeric_correct"])
+        p["value"] = "not a number"
+        self.assertFalse(score_case(case, p)["numeric_correct"])
+
+    def test_duplicate_and_unknown_ids_rejected(self):
+        p = baseline_prediction(cases()[0])
+        with self.assertRaises(ValueError):
+            evaluate([p, p])
+        with self.assertRaises(ValueError):
+            evaluate([{"case_id": "made-up"}])
+
+    def test_sample_predictions_are_imperfect(self):
+        p = json.loads((Path(__file__).resolve().parent.parent / "examples" / "sample_predictions.json").read_text())
+        report = evaluate(p)
+        self.assertEqual(report["submitted"], 3)
+        self.assertLess(report["strict_pass_rate"], 1)
+
+
+if __name__ == "__main__":
+    unittest.main()
