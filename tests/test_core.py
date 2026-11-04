@@ -2,8 +2,10 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from finance_benchmark.core import baseline_prediction, cases, evaluate, score_case
+from finance_benchmark.__main__ import main
 
 
 class BenchmarkTests(unittest.TestCase):
@@ -60,6 +62,23 @@ class BenchmarkTests(unittest.TestCase):
         report = evaluate(p)
         self.assertEqual(report["submitted"], 3)
         self.assertLess(report["strict_pass_rate"], 1)
+
+    def test_gemini_uses_its_key_endpoint_and_three_case_denominator(self):
+        seen = []
+
+        def mock_prediction(case, model, base_url, key):
+            seen.append((model, base_url, key))
+            return baseline_prediction(case)
+
+        with tempfile.TemporaryDirectory() as temp:
+            with patch.dict("os.environ", {"GEMINI_API_KEY": "fake-test-key"}), \
+                 patch("sys.argv", ["finance_benchmark", "run", "--provider", "gemini", "--limit", "3", "--output", temp]), \
+                 patch("finance_benchmark.__main__.api_prediction", side_effect=mock_prediction):
+                main()
+            report = json.loads((Path(temp) / "report.json").read_text())
+        self.assertEqual(report["case_count"], 3)
+        self.assertEqual(report["strict_pass_rate"], 1)
+        self.assertEqual(seen, [("gemini-2.5-flash", "https://generativelanguage.googleapis.com/v1beta/openai", "fake-test-key")] * 3)
 
 
 if __name__ == "__main__":
