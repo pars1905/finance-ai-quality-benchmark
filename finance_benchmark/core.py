@@ -7,7 +7,9 @@ from pathlib import Path
 
 DATA = Path(__file__).resolve().parent.parent / "data" / "statements.json"
 REAL_DATA = Path(__file__).resolve().parent.parent / "data" / "real_filings_v1.json"
-DATASETS = ("synthetic-v1", "real-filings-v1")
+DEMO_DATA = Path(__file__).resolve().parent.parent / "data" / "customer_demos_v1.json"
+DEMO_DATASETS = ("demo-fpna-v1", "demo-credit-v1", "demo-research-v1")
+DATASETS = ("synthetic-v1", "real-filings-v1") + DEMO_DATASETS
 
 TASKS = {
     "gross_margin": ("2025 gross margin, percent", ("revenue_2025", "cost_of_sales_2025")),
@@ -40,6 +42,8 @@ def calculate(task, f):
 def cases(dataset="synthetic-v1"):
     if dataset == "real-filings-v1":
         return json.loads(REAL_DATA.read_text(encoding="utf-8"))
+    if dataset in DEMO_DATASETS:
+        return json.loads(DEMO_DATA.read_text(encoding="utf-8"))[dataset]
     if dataset != "synthetic-v1":
         raise ValueError(f"Unknown dataset: {dataset}")
     result = []
