@@ -2,7 +2,7 @@
 
 A small, reproducible benchmark for evaluating AI answers to financial-statement questions. Built as a portfolio demonstration of finance domain expertise, expert rubrics, and AI evaluation operations.
 
-**Status:** Synthetic demonstration, not a validated real-world finance benchmark. No confidential employer or client data.
+**Status:** Working pilot with a synthetic control and three curated excerpts from public annual reports. Not a validated full-document finance benchmark. No confidential employer or client data.
 
 ## What it measures
 
@@ -12,6 +12,26 @@ A small, reproducible benchmark for evaluating AI answers to financial-statement
 - Includes deliberately flawed sample answers to demonstrate failure detection.
 
 All values in `data/statements.json` are fictional and in consistent arbitrary units. The benchmark tests arithmetic and traceability, not accounting interpretation, financial advice or investment performance.
+
+## Three public-filing examples
+
+`data/real_filings_v1.json` contains one independently checkable arithmetic question per company. Values are manually transcribed from fixed SEC annual filings; each case stores its accession number, filing URL, table location, reporting units, source IDs, and reference answer.
+
+| Company | Annual report | Question | Reference answer |
+| --- | --- | --- | ---: |
+| [Microsoft](https://www.sec.gov/Archives/edgar/data/789019/000095017025100235/msft-20250630.htm) | FY2025 10-K | Revenue growth, FY2024 to FY2025 | 14.93% |
+| [Apple](https://www.sec.gov/Archives/edgar/data/320193/000032019325000079/aapl-20250927.htm) | FY2025 10-K | Services share of total FY2025 net sales | 26.23% |
+| [Turkcell](https://www.sec.gov/Archives/edgar/data/1071321/000110465926044740/tkc-20251231x20f.htm) | FY2025 20-F | Revenue growth using the FY2024 comparable amount from the **same FY2025 report** | 10.69% |
+
+Turkcell applies IAS 29 inflation accounting; comparing the FY2025 figure with the previously published FY2024 report's unadjusted amount would be invalid. Both figures here come from the FY2025 filing and use TRY thousands. These are three curated **filing excerpts**, so the model is tested on cited financial reasoning, not retrieval from complete reports. The reference control copies answers and should not be presented as a model result.
+
+To run the three-case Gemini pilot after setting the Codespaces secret `GEMINI_API_KEY`:
+
+```bash
+python -m finance_benchmark run --provider gemini --dataset real-filings-v1 --delay-seconds 20 --output results/real-filings-gemini
+```
+
+If quota errors occur, repeat with `--resume results/real-filings-gemini/predictions.json` and a different output directory after the quota resets. Review `predictions.json` explanations manually; the scorer checks numbers and reference IDs, not whether prose is fully supported by the filing.
 
 ## Run without API keys
 
