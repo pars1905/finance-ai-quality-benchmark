@@ -63,6 +63,24 @@ class BenchmarkTests(unittest.TestCase):
         self.assertEqual(report["submitted"], 3)
         self.assertLess(report["strict_pass_rate"], 1)
 
+    def test_api_errors_do_not_reduce_model_accuracy(self):
+        subset = cases()[:3]
+        predictions = [baseline_prediction(subset[0]), baseline_prediction(subset[1]),
+                       {"case_id": subset[2]["case_id"], "request_error": {"type": "http", "status": 429}}]
+        report = evaluate(predictions, selected_cases=subset)
+        self.assertEqual(report["evaluated_count"], 2)
+        self.assertEqual(report["api_error_count"], 1)
+        self.assertAlmostEqual(report["coverage"], 2 / 3)
+        self.assertEqual(report["strict_pass_rate"], 1)
+        legacy = {"case_id": subset[2]["case_id"], "abstained": True,
+                  "source_refs": [], "explanation": "API or parsing failure"}
+        self.assertEqual(score_case(subset[2], legacy)["error_codes"], ["api_error"])
+
+    def test_no_model_responses_reports_unavailable_accuracy(self):
+        subset = cases()[:1]
+        report = evaluate([], selected_cases=subset)
+        self.assertIsNone(report["strict_pass_rate"])
+
     def test_gemini_uses_its_key_endpoint_and_three_case_denominator(self):
         seen = []
 
