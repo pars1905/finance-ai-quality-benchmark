@@ -33,6 +33,8 @@ python -m finance_benchmark run --provider gemini --dataset real-filings-v1 --de
 
 If quota errors occur, repeat with `--resume results/real-filings-gemini/predictions.json` and a different output directory after the quota resets. Review `predictions.json` explanations manually; the scorer checks numbers and reference IDs, not whether prose is fully supported by the filing.
 
+Transient HTTP 500/503/504 responses are retried twice with short exponential waits. HTTP 429 quota errors are saved for a later `--resume` run; the result report shows the HTTP status separately from model quality.
+
 ## Run without API keys
 
 ```bash
