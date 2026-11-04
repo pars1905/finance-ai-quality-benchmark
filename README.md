@@ -13,6 +13,18 @@ A small, reproducible benchmark for evaluating AI answers to financial-statement
 
 All values in `data/statements.json` are fictional and in consistent arbitrary units. The benchmark tests arithmetic and traceability, not accounting interpretation, financial advice or investment performance.
 
+## Three runnable customer conversation demos
+
+The [Turkish demo walkthrough](docs/three-customer-demos-tr.md) covers three fictional client scenarios: management reporting (correct answer), credit analysis (wrong number), and research review (wrong source reference). Sample responses are hand-authored to demonstrate the scorer; they are **not actual model outputs or customer engagements**.
+
+```bash
+python -m finance_benchmark evaluate examples/demo-fpna-predictions.json --dataset demo-fpna-v1 --output results/demo-fpna
+python -m finance_benchmark evaluate examples/demo-credit-predictions.json --dataset demo-credit-v1 --output results/demo-credit
+python -m finance_benchmark evaluate examples/demo-research-predictions.json --dataset demo-research-v1 --output results/demo-research
+```
+
+Each demo has one case. The expected strict pass rates are 100%, 0%, and 0% respectively. The second case demonstrates a numeric failure with correct references; the third demonstrates a source failure despite a correct number. To test a live model on any of them, use the existing `run --provider gemini --dataset ...` command with a key set in your environment.
+
 ## Three public-filing examples
 
 `data/real_filings_v1.json` contains one independently checkable arithmetic question per company. Values are manually transcribed from fixed SEC annual filings; each case stores its accession number, filing URL, table location, reporting units, source IDs, and reference answer.
