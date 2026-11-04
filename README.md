@@ -7,7 +7,7 @@ A small, reproducible benchmark for evaluating AI answers to financial-statement
 ## What it measures
 
 - 30 questions: six fictional companies × five financial calculations (gross margin, revenue growth, operating margin, current ratio, debt-to-equity).
-- Separately scores numeric answers (absolute tolerance 0.01) and exact source-field references; strict pass requires both. API errors are reported as coverage failures, not incorrect model answers.
+- Separately scores numeric answers (absolute tolerance 0.01) and exact source-field references; strict pass requires both. Percentage questions accept a numeric value or a numeric string ending in `%`; ratios reject `%`. API errors are reported as coverage failures, not incorrect model answers.
 - Produces per-case failure codes and JSON/Markdown reports. Every nonempty explanation is flagged for expert review; the script **does not claim to verify the truth of prose**.
 - Includes deliberately flawed sample answers to demonstrate failure detection.
 
