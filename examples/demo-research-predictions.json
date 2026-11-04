@@ -1,0 +1,12 @@
+[
+  {
+    "case_id": "research-gross-margin",
+    "value": 40,
+    "source_refs": [
+      "research:revenue",
+      "research:operating_expenses"
+    ],
+    "explanation": "(120 - 72) / 120 * 100 = 40.00%.",
+    "abstained": false
+  }
+]
