@@ -89,7 +89,14 @@ def score_case(case, prediction):
         errors.append("unnecessary_abstention")
     else:
         try:
-            value = Decimal(str(prediction.get("value")))
+            raw_value = prediction.get("value")
+            if isinstance(raw_value, bool):
+                raise ValueError("Boolean is not a numeric answer")
+            if isinstance(raw_value, str) and raw_value.strip().endswith("%"):
+                if "percent" not in case["question"].lower():
+                    raise ValueError("Percent sign on a non-percentage question")
+                raw_value = raw_value.strip()[:-1].strip()
+            value = Decimal(str(raw_value))
             numeric = value.is_finite() and abs(value - Decimal(case["expected_value"])) <= Decimal("0.01")
         except (InvalidOperation, TypeError, ValueError):
             pass
