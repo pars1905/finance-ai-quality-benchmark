@@ -8,17 +8,19 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-from .core import baseline_prediction, cases, evaluate, is_request_error, markdown_report
+from .core import DATASETS, baseline_prediction, cases, evaluate, is_request_error, markdown_report
 
 
 def api_prediction(case, model, base_url, key):
-    prompt = ("You are evaluating a fictional financial statement. Use ONLY the supplied facts. "
+    evidence = (case["evidence"] if "evidence" in case else [
+        {"source_ref": case["case_id"].split("-")[0] + ":" + k, "text": f"{k}: {v}"}
+        for k, v in case["facts"].items()])
+    prompt = ("You are evaluating financial statement evidence. Use ONLY the supplied evidence. "
               "Return one JSON object with keys value (number or string), source_refs (list of exact IDs), "
               "explanation (brief), and abstained (boolean). Do not invent sources. "
               "If evidence is insufficient, abstain.\n"
-              + json.dumps({"question": case["question"], "facts": [
-                  {"source_ref": case["case_id"].split("-")[0] + ":" + k, "value": v}
-                  for k, v in case["facts"].items()]}, ensure_ascii=False))
+              + json.dumps({"question": case["question"], "evidence": evidence,
+                            "filing_source_url": case.get("source_url")}, ensure_ascii=False))
     url = base_url.rstrip("/") + "/chat/completions"
     request = urllib.request.Request(url, data=json.dumps({
         "model": model, "temperature": 0,
@@ -35,29 +37,33 @@ def api_prediction(case, model, base_url, key):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Finance AI Quality Benchmark (synthetic-v1)")
+    parser = argparse.ArgumentParser(description="Finance AI Quality Benchmark")
     sub = parser.add_subparsers(dest="command", required=True)
     run = sub.add_parser("run", help="Generate and score predictions")
     run.add_argument("--provider", choices=("baseline", "api", "gemini"), default="baseline")
+    run.add_argument("--dataset", choices=DATASETS, default="synthetic-v1")
     run.add_argument("--model", help="API model ID; Gemini defaults to gemini-2.5-flash")
-    run.add_argument("--limit", type=int, default=30, help="Maximum cases to send to API (1–30)")
+    run.add_argument("--limit", type=int, help="Maximum number of cases; defaults to the full dataset")
     run.add_argument("--delay-seconds", type=float, default=0, help="Pause between API requests to respect rate limits")
     run.add_argument("--resume", type=Path, help="Retry only API errors or missing cases from a previous predictions.json")
     run.add_argument("--output", type=Path, default=Path("results"))
     check = sub.add_parser("evaluate", help="Score a JSON list of predictions")
     check.add_argument("predictions", type=Path)
-    check.add_argument("--limit", type=int, help="Score only the first N benchmark cases (1–30)")
+    check.add_argument("--dataset", choices=DATASETS, default="synthetic-v1")
+    check.add_argument("--limit", type=int, help="Score only the first N benchmark cases")
     check.add_argument("--output", type=Path, default=Path("results"))
     args = parser.parse_args()
+    dataset_cases = cases(args.dataset)
+    if args.limit is not None and not 1 <= args.limit <= len(dataset_cases):
+        parser.error(f"--limit must be between 1 and {len(dataset_cases)}")
+    selected = dataset_cases[:args.limit] if args.limit is not None else dataset_cases
     if args.command == "run":
-        if not 1 <= args.limit <= 30:
-            parser.error("--limit must be between 1 and 30")
         if args.delay_seconds < 0:
             parser.error("--delay-seconds must not be negative")
         if args.provider == "baseline":
             if args.resume:
                 parser.error("--resume requires --provider api or gemini")
-            predictions = [baseline_prediction(case) for case in cases()[:args.limit]]
+            predictions = [baseline_prediction(case) for case in selected]
         else:
             if args.provider == "gemini":
                 key = os.getenv("GEMINI_API_KEY")
@@ -72,12 +78,12 @@ def main():
                 if not model or not key:
                     parser.error("API runs require --model and AI_API_KEY")
             previous = {}
-            selected_cases = cases()[:args.limit]
+            selected_cases = selected
             if args.resume:
                 old_predictions = json.loads(args.resume.read_text(encoding="utf-8"))
                 if not isinstance(old_predictions, list):
                     parser.error("--resume file must contain a JSON list")
-                evaluate(old_predictions, selected_cases=selected_cases)
+                evaluate(old_predictions, selected_cases=selected_cases, dataset=args.dataset)
                 previous = {p["case_id"]: p for p in old_predictions}
             predictions = []
             requests_sent = 0
@@ -98,13 +104,10 @@ def main():
                         "type": "http" if status is not None else "transport_or_parse",
                         "status": status}})
     else:
-        if args.limit is not None and not 1 <= args.limit <= 30:
-            parser.error("--limit must be between 1 and 30")
         predictions = json.loads(args.predictions.read_text(encoding="utf-8"))
         if not isinstance(predictions, list):
             parser.error("Prediction file must contain a JSON list")
-    selected = cases()[:args.limit] if args.limit is not None else None
-    report = evaluate(predictions, selected_cases=selected)
+    report = evaluate(predictions, selected_cases=selected, dataset=args.dataset)
     args.output.mkdir(parents=True, exist_ok=True)
     (args.output / "predictions.json").write_text(json.dumps(predictions, indent=2) + "\n", encoding="utf-8")
     (args.output / "report.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
