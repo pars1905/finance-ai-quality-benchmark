@@ -62,13 +62,17 @@ def baseline_prediction(case):
     }
 
 
+def is_request_error(prediction):
+    return ("request_error" in prediction or
+            (prediction.get("abstained") is True and prediction.get("explanation") == "API or parsing failure"))
+
+
 def score_case(case, prediction):
     if prediction is None:
         return {"case_id": case["case_id"], "numeric_correct": False, "sources_correct": False,
                 "pass": False, "error_codes": ["missing_prediction"], "needs_expert_review": False,
                 "evaluated": False}
-    legacy_api_error = prediction.get("abstained") is True and prediction.get("explanation") == "API or parsing failure"
-    if "request_error" in prediction or legacy_api_error:
+    if is_request_error(prediction):
         return {"case_id": case["case_id"], "numeric_correct": False, "sources_correct": False,
                 "pass": False, "error_codes": ["api_error"], "needs_expert_review": False,
                 "evaluated": False, "request_error": prediction.get("request_error", {"type": "legacy_api_error", "status": None})}
