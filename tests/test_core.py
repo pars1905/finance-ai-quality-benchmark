@@ -3,6 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
+from decimal import Decimal
 
 from finance_benchmark.core import baseline_prediction, cases, evaluate, score_case
 from finance_benchmark.__main__ import main
@@ -80,6 +81,24 @@ class BenchmarkTests(unittest.TestCase):
         subset = cases()[:1]
         report = evaluate([], selected_cases=subset)
         self.assertIsNone(report["strict_pass_rate"])
+
+    def test_real_filing_pilot_has_three_source_backed_calculations(self):
+        items = cases("real-filings-v1")
+        self.assertEqual(len(items), 3)
+        self.assertEqual({x["company"] for x in items},
+                         {"Microsoft Corporation", "Apple Inc.", "Turkcell Iletisim Hizmetleri A.S."})
+        for case in items:
+            self.assertTrue(case["source_url"].startswith("https://www.sec.gov/Archives/edgar/data/"))
+            self.assertEqual({e["source_ref"] for e in case["evidence"]}, set(case["required_source_refs"]))
+            numbers = [Decimal(e["text"].split(": ")[1].split(" ")[1].replace(",", "")) for e in case["evidence"]]
+            if case["case_id"] == "aapl-2025-services-share":
+                expected = numbers[0] / numbers[1] * 100
+            else:
+                expected = (numbers[1] / numbers[0] - 1) * 100
+            self.assertAlmostEqual(float(expected), float(case["expected_value"]), delta=0.005)
+        report = evaluate([baseline_prediction(x) for x in items], dataset="real-filings-v1")
+        self.assertEqual(report["case_count"], 3)
+        self.assertEqual(report["strict_pass_rate"], 1)
 
     def test_gemini_uses_its_key_endpoint_and_three_case_denominator(self):
         seen = []
