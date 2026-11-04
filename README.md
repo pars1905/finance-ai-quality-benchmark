@@ -70,6 +70,14 @@ If a daily quota is exhausted, wait for the quota reset. API failures remain in 
 python -m finance_benchmark evaluate results/gemini-10/predictions.json --limit 10 --output results/gemini-10-rescored
 ```
 
+After the quota allows more requests, keep the six successful answers and retry only the four API errors:
+
+```bash
+python -m finance_benchmark run --provider gemini --limit 10 --resume results/gemini-10/predictions.json --delay-seconds 20 --output results/gemini-10-complete
+```
+
+`--resume` accepts previous predictions from the same first N cases, validates their IDs, and reuses genuine model responses (including genuine abstentions). It retries missing cases and both old and new API errors. The delay applies between actual API requests only.
+
 ## Expert quality rubric (next pilot)
 
 | Dimension | Automated here | Expert review |
