@@ -4,9 +4,10 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 from decimal import Decimal
+from urllib.error import HTTPError
 
 from finance_benchmark.core import baseline_prediction, cases, evaluate, score_case
-from finance_benchmark.__main__ import main
+from finance_benchmark.__main__ import api_prediction_with_retry, main
 
 
 class BenchmarkTests(unittest.TestCase):
@@ -81,6 +82,24 @@ class BenchmarkTests(unittest.TestCase):
         subset = cases()[:1]
         report = evaluate([], selected_cases=subset)
         self.assertIsNone(report["strict_pass_rate"])
+
+    def test_temporary_503_retries_but_quota_429_does_not(self):
+        case = cases("real-filings-v1")[0]
+        unavailable = HTTPError("https://example.invalid", 503, "Service Unavailable", {}, None)
+        with patch("finance_benchmark.__main__.api_prediction",
+                   side_effect=[unavailable, unavailable, baseline_prediction(case)]) as request, \
+             patch("finance_benchmark.__main__.time.sleep") as sleep:
+            result = api_prediction_with_retry(case, "model", "https://example.invalid", "fake-test-key")
+        self.assertEqual(result["case_id"], case["case_id"])
+        self.assertEqual(request.call_count, 3)
+        self.assertEqual([x.args[0] for x in sleep.call_args_list], [5, 10])
+        limited = HTTPError("https://example.invalid", 429, "Too Many Requests", {}, None)
+        with patch("finance_benchmark.__main__.api_prediction", side_effect=limited) as request, \
+             patch("finance_benchmark.__main__.time.sleep") as sleep:
+            with self.assertRaises(HTTPError):
+                api_prediction_with_retry(case, "model", "https://example.invalid", "fake-test-key")
+        self.assertEqual(request.call_count, 1)
+        sleep.assert_not_called()
 
     def test_real_filing_pilot_has_three_source_backed_calculations(self):
         items = cases("real-filings-v1")
