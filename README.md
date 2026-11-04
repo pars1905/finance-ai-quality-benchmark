@@ -7,7 +7,7 @@ A small, reproducible benchmark for evaluating AI answers to financial-statement
 ## What it measures
 
 - 30 questions: six fictional companies × five financial calculations (gross margin, revenue growth, operating margin, current ratio, debt-to-equity).
-- Separately scores numeric answers (absolute tolerance 0.01) and exact source-field references; strict pass requires both.
+- Separately scores numeric answers (absolute tolerance 0.01) and exact source-field references; strict pass requires both. API errors are reported as coverage failures, not incorrect model answers.
 - Produces per-case failure codes and JSON/Markdown reports. Every nonempty explanation is flagged for expert review; the script **does not claim to verify the truth of prose**.
 - Includes deliberately flawed sample answers to demonstrate failure detection.
 
@@ -21,7 +21,7 @@ python -m finance_benchmark run --provider baseline
 python -m finance_benchmark evaluate examples/sample_predictions.json --output results/sample
 ```
 
-The baseline copies gold arithmetic and citations as a **harness control**; its 100% result is not an AI performance claim. The sample yields errors and missing predictions by design. Reports are written to `results/report.json`, `results/report.md`, and `results/predictions.json` (or the chosen output directory).
+The baseline copies gold arithmetic and citations as a **harness control**; its 100% result is not an AI performance claim. The sample yields errors and missing predictions by design. Accuracy is computed over evaluated responses; coverage shows how many requested cases received a usable response. Reports are written to `results/report.json`, `results/report.md`, and `results/predictions.json` (or the chosen output directory).
 
 GitHub Actions runs these checks on every push and attaches an `evaluation-reports` artifact with both control and deliberately flawed sample outputs.
 
@@ -57,6 +57,18 @@ cat results/gemini-trial/report.md
 ```
 
 The Gemini provider defaults to `gemini-2.5-flash` and Google's OpenAI-compatible Chat Completions endpoint. You can override the model with `--model`. The key is read from the environment and is never written to the report. `--limit 3` reports scores over three cases. Free-tier availability and quotas depend on your Google AI Studio project. Do not commit `results/` or the key.
+
+If you see HTTP 429, inspect the rate limits for your project in Google AI Studio. A slower trial can help with per-minute limits:
+
+```bash
+python -m finance_benchmark run --provider gemini --limit 10 --delay-seconds 20 --output results/gemini-slow
+```
+
+If a daily quota is exhausted, wait for the quota reset. API failures remain in `predictions.json` but are shown separately from model accuracy. To re-score a previous run created with the older version of this project **without sending new API requests**, use:
+
+```bash
+python -m finance_benchmark evaluate results/gemini-10/predictions.json --limit 10 --output results/gemini-10-rescored
+```
 
 ## Expert quality rubric (next pilot)
 
