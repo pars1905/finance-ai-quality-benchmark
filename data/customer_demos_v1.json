@@ -1,0 +1,68 @@
+{
+  "demo-fpna-v1": [
+    {
+      "case_id": "fpna-revenue-growth",
+      "company": "Northstar Retail (fictional)",
+      "question": "Using the supplied figures, what was Northstar Retail's revenue growth from 2024 to 2025, as a percent? Round to two decimal places.",
+      "evidence": [
+        {
+          "source_ref": "fpna:revenue_2024",
+          "text": "2024 revenue: 80 million USD."
+        },
+        {
+          "source_ref": "fpna:revenue_2025",
+          "text": "2025 revenue: 100 million USD."
+        }
+      ],
+      "required_source_refs": [
+        "fpna:revenue_2024",
+        "fpna:revenue_2025"
+      ],
+      "expected_value": "25.00"
+    }
+  ],
+  "demo-credit-v1": [
+    {
+      "case_id": "credit-current-ratio",
+      "company": "Harbor Manufacturing (fictional)",
+      "question": "Using the supplied figures, what is Harbor Manufacturing's current ratio? Round to two decimal places.",
+      "evidence": [
+        {
+          "source_ref": "credit:current_assets",
+          "text": "Current assets: 150 million USD."
+        },
+        {
+          "source_ref": "credit:current_liabilities",
+          "text": "Current liabilities: 100 million USD."
+        }
+      ],
+      "required_source_refs": [
+        "credit:current_assets",
+        "credit:current_liabilities"
+      ],
+      "expected_value": "1.50"
+    }
+  ],
+  "demo-research-v1": [
+    {
+      "case_id": "research-gross-margin",
+      "company": "Cedar Software (fictional)",
+      "question": "Using the supplied figures, what is Cedar Software's gross margin, as a percent? Round to two decimal places.",
+      "evidence": [
+        {
+          "source_ref": "research:revenue",
+          "text": "Revenue: 120 million USD."
+        },
+        {
+          "source_ref": "research:cost_of_sales",
+          "text": "Cost of sales: 72 million USD."
+        }
+      ],
+      "required_source_refs": [
+        "research:revenue",
+        "research:cost_of_sales"
+      ],
+      "expected_value": "40.00"
+    }
+  ]
+}
