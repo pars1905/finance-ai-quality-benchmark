@@ -139,6 +139,30 @@ class BenchmarkTests(unittest.TestCase):
         self.assertEqual(report["case_count"], 3)
         self.assertEqual(report["strict_pass_rate"], 1)
 
+    def test_three_customer_demos_score_distinct_outcomes(self):
+        root = Path(__file__).resolve().parent.parent
+        scenarios = (
+            ("demo-fpna-v1", "examples/demo-fpna-predictions.json", [], 1),
+            ("demo-credit-v1", "examples/demo-credit-predictions.json", ["incorrect_numeric_value"], 0),
+            ("demo-research-v1", "examples/demo-research-predictions.json", ["missing_or_incorrect_sources"], 0),
+        )
+        for dataset, file_name, errors, expected_pass in scenarios:
+            with self.subTest(dataset=dataset):
+                items = cases(dataset)
+                self.assertEqual(len(items), 1)
+                self.assertEqual(evaluate([baseline_prediction(items[0])], dataset=dataset)["strict_pass_rate"], 1)
+                predictions = json.loads((root / file_name).read_text(encoding="utf-8"))
+                report = evaluate(predictions, dataset=dataset)
+                self.assertEqual(report["case_count"], 1)
+                self.assertEqual(report["evaluated_count"], 1)
+                self.assertEqual(report["results"][0]["error_codes"], errors)
+                self.assertEqual(report["strict_pass_rate"], expected_pass)
+                with tempfile.TemporaryDirectory() as temp:
+                    with patch("sys.argv", ["finance_benchmark", "evaluate", str(root / file_name),
+                                           "--dataset", dataset, "--output", temp]):
+                        main()
+                    self.assertEqual(json.loads((Path(temp) / "report.json").read_text())["strict_pass_rate"], expected_pass)
+
     def test_gemini_uses_its_key_endpoint_and_three_case_denominator(self):
         seen = []
 
