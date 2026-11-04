@@ -65,7 +65,13 @@ def baseline_prediction(case):
 def score_case(case, prediction):
     if prediction is None:
         return {"case_id": case["case_id"], "numeric_correct": False, "sources_correct": False,
-                "pass": False, "error_codes": ["missing_prediction"], "needs_expert_review": False}
+                "pass": False, "error_codes": ["missing_prediction"], "needs_expert_review": False,
+                "evaluated": False}
+    legacy_api_error = prediction.get("abstained") is True and prediction.get("explanation") == "API or parsing failure"
+    if "request_error" in prediction or legacy_api_error:
+        return {"case_id": case["case_id"], "numeric_correct": False, "sources_correct": False,
+                "pass": False, "error_codes": ["api_error"], "needs_expert_review": False,
+                "evaluated": False, "request_error": prediction.get("request_error", {"type": "legacy_api_error", "status": None})}
     errors = []
     abstained = prediction.get("abstained") is True
     numeric = False
@@ -88,7 +94,7 @@ def score_case(case, prediction):
     needs_review = isinstance(explanation, str) and bool(explanation.strip()) and not abstained
     return {"case_id": case["case_id"], "numeric_correct": numeric, "sources_correct": sources,
             "pass": numeric and sources and not abstained, "error_codes": errors,
-            "needs_expert_review": needs_review}
+            "needs_expert_review": needs_review, "evaluated": True}
 
 
 def evaluate(predictions, selected_cases=None):
@@ -106,24 +112,34 @@ def evaluate(predictions, selected_cases=None):
         raise ValueError(f"Unknown case_id(s): {', '.join(unknown)}")
     results = [score_case(case, by_id.get(case["case_id"])) for case in all_cases]
     n = len(results)
+    evaluated = [r for r in results if r["evaluated"]]
+    count = len(evaluated)
     return {"dataset": "synthetic-v1", "case_count": n, "submitted": len(by_id),
-            "numeric_accuracy": sum(r["numeric_correct"] for r in results) / n,
-            "source_accuracy": sum(r["sources_correct"] for r in results) / n,
-            "strict_pass_rate": sum(r["pass"] for r in results) / n,
+            "evaluated_count": count, "api_error_count": sum("api_error" in r["error_codes"] for r in results),
+            "coverage": count / n if n else None,
+            "numeric_accuracy": sum(r["numeric_correct"] for r in evaluated) / count if count else None,
+            "source_accuracy": sum(r["sources_correct"] for r in evaluated) / count if count else None,
+            "strict_pass_rate": sum(r["pass"] for r in evaluated) / count if count else None,
             "expert_review_required": sum(r["needs_expert_review"] for r in results),
             "results": results,
             "limitations": "Synthetic statements; explanation truthfulness requires human review. No real-world model performance claim."}
 
 
 def markdown_report(report):
-    failures = [r for r in report["results"] if not r["pass"]]
+    failures = [r for r in report["results"] if r["evaluated"] and not r["pass"]]
+    unevaluated = [r for r in report["results"] if not r["evaluated"]]
+    percent = lambda value: f"{value:.1%}" if value is not None else "N/A"
     lines = ["# Finance AI Quality Benchmark — evaluation", "",
              f"Dataset: `{report['dataset']}` · Cases: {report['case_count']} · Submitted: {report['submitted']}", "",
-             f"- Numeric accuracy: {report['numeric_accuracy']:.1%}",
-             f"- Source accuracy: {report['source_accuracy']:.1%}",
-             f"- Strict pass rate: {report['strict_pass_rate']:.1%}",
+             f"- Evaluated model responses: {report['evaluated_count']}/{report['case_count']} (coverage: {percent(report['coverage'])})",
+             f"- API errors: {report['api_error_count']}",
+             f"- Numeric accuracy (evaluated responses): {percent(report['numeric_accuracy'])}",
+             f"- Source accuracy (evaluated responses): {percent(report['source_accuracy'])}",
+             f"- Strict pass rate (evaluated responses): {percent(report['strict_pass_rate'])}",
              f"- Explanations requiring expert review: {report['expert_review_required']}", "",
              "## Failures", ""]
     lines += [f"- `{r['case_id']}`: {', '.join(r['error_codes'])}" for r in failures] or ["No deterministic failures."]
+    lines += ["", "## Not evaluated", ""]
+    lines += [f"- `{r['case_id']}`: {', '.join(r['error_codes'])}" for r in unevaluated] or ["None."]
     lines += ["", "## Interpretation", "", report["limitations"], ""]
     return "\n".join(lines)
