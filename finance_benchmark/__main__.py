@@ -37,8 +37,8 @@ def main():
     parser = argparse.ArgumentParser(description="Finance AI Quality Benchmark (synthetic-v1)")
     sub = parser.add_subparsers(dest="command", required=True)
     run = sub.add_parser("run", help="Generate and score predictions")
-    run.add_argument("--provider", choices=("baseline", "api"), default="baseline")
-    run.add_argument("--model", help="API model ID, required for --provider api")
+    run.add_argument("--provider", choices=("baseline", "api", "gemini"), default="baseline")
+    run.add_argument("--model", help="API model ID; Gemini defaults to gemini-2.5-flash")
     run.add_argument("--limit", type=int, default=30, help="Maximum cases to send to API (1–30)")
     run.add_argument("--output", type=Path, default=Path("results"))
     check = sub.add_parser("evaluate", help="Score a JSON list of predictions")
@@ -51,14 +51,22 @@ def main():
         if args.provider == "baseline":
             predictions = [baseline_prediction(case) for case in cases()[:args.limit]]
         else:
-            key = os.getenv("AI_API_KEY")
-            base_url = os.getenv("AI_API_BASE_URL", "https://api.openai.com/v1")
-            if not args.model or not key:
-                parser.error("API runs require --model and AI_API_KEY")
+            if args.provider == "gemini":
+                key = os.getenv("GEMINI_API_KEY")
+                base_url = "https://generativelanguage.googleapis.com/v1beta/openai"
+                model = args.model or "gemini-2.5-flash"
+                if not key:
+                    parser.error("Gemini runs require GEMINI_API_KEY")
+            else:
+                key = os.getenv("AI_API_KEY")
+                base_url = os.getenv("AI_API_BASE_URL", "https://api.openai.com/v1")
+                model = args.model
+                if not model or not key:
+                    parser.error("API runs require --model and AI_API_KEY")
             predictions = []
             for case in cases()[:args.limit]:
                 try:
-                    predictions.append(api_prediction(case, args.model, base_url, key))
+                    predictions.append(api_prediction(case, model, base_url, key))
                 except (ValueError, KeyError, urllib.error.URLError) as exc:
                     print(f"{case['case_id']}: {type(exc).__name__}: {exc}", file=sys.stderr)
                     predictions.append({"case_id": case["case_id"], "abstained": True,
