@@ -47,6 +47,17 @@ python -m finance_benchmark run --provider api --model YOUR_MODEL_ID --limit 3 -
 
 Omit `AI_API_BASE_URL` to use the shown default. The CLI sends one request per case. API/parsing errors are counted as abstentions and printed to stderr; the report preserves all returned predictions. **Only run with a trusted endpoint** and do not put confidential customer data in this dataset.
 
+### Gemini free-tier trial
+
+Store your Google AI Studio key as a GitHub Codespaces secret named `GEMINI_API_KEY` for this repository. Create a new Codespace (or restart an existing one to load a newly added secret), then run:
+
+```bash
+python -m finance_benchmark run --provider gemini --limit 3 --output results/gemini-trial
+cat results/gemini-trial/report.md
+```
+
+The Gemini provider defaults to `gemini-2.5-flash` and Google's OpenAI-compatible Chat Completions endpoint. You can override the model with `--model`. The key is read from the environment and is never written to the report. `--limit 3` reports scores over three cases. Free-tier availability and quotas depend on your Google AI Studio project. Do not commit `results/` or the key.
+
 ## Expert quality rubric (next pilot)
 
 | Dimension | Automated here | Expert review |
