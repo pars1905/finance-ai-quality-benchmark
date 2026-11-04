@@ -8,7 +8,7 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-from .core import baseline_prediction, cases, evaluate, markdown_report
+from .core import baseline_prediction, cases, evaluate, is_request_error, markdown_report
 
 
 def api_prediction(case, model, base_url, key):
@@ -42,6 +42,7 @@ def main():
     run.add_argument("--model", help="API model ID; Gemini defaults to gemini-2.5-flash")
     run.add_argument("--limit", type=int, default=30, help="Maximum cases to send to API (1–30)")
     run.add_argument("--delay-seconds", type=float, default=0, help="Pause between API requests to respect rate limits")
+    run.add_argument("--resume", type=Path, help="Retry only API errors or missing cases from a previous predictions.json")
     run.add_argument("--output", type=Path, default=Path("results"))
     check = sub.add_parser("evaluate", help="Score a JSON list of predictions")
     check.add_argument("predictions", type=Path)
@@ -54,6 +55,8 @@ def main():
         if args.delay_seconds < 0:
             parser.error("--delay-seconds must not be negative")
         if args.provider == "baseline":
+            if args.resume:
+                parser.error("--resume requires --provider api or gemini")
             predictions = [baseline_prediction(case) for case in cases()[:args.limit]]
         else:
             if args.provider == "gemini":
@@ -68,10 +71,24 @@ def main():
                 model = args.model
                 if not model or not key:
                     parser.error("API runs require --model and AI_API_KEY")
+            previous = {}
+            selected_cases = cases()[:args.limit]
+            if args.resume:
+                old_predictions = json.loads(args.resume.read_text(encoding="utf-8"))
+                if not isinstance(old_predictions, list):
+                    parser.error("--resume file must contain a JSON list")
+                evaluate(old_predictions, selected_cases=selected_cases)
+                previous = {p["case_id"]: p for p in old_predictions}
             predictions = []
-            for index, case in enumerate(cases()[:args.limit]):
-                if index and args.delay_seconds:
+            requests_sent = 0
+            for case in selected_cases:
+                old = previous.get(case["case_id"])
+                if old is not None and not is_request_error(old):
+                    predictions.append(old)
+                    continue
+                if requests_sent and args.delay_seconds:
                     time.sleep(args.delay_seconds)
+                requests_sent += 1
                 try:
                     predictions.append(api_prediction(case, model, base_url, key))
                 except (ValueError, KeyError, urllib.error.URLError) as exc:
