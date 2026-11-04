@@ -37,6 +37,8 @@ A [manual review of the three Gemini explanations](reviews/real-filings-v1-gemin
 
 Transient HTTP 500/503/504 responses are retried twice with short exponential waits. HTTP 429 quota errors are saved for a later `--resume` run; the result report shows the HTTP status separately from model quality.
 
+For a prospective customer's first call, demo, model connection, tailored dataset and acceptance steps, see the [Turkish customer pilot guide](docs/customer-pilot-guide-tr.md).
+
 ## Run without API keys
 
 ```bash
