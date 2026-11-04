@@ -98,6 +98,27 @@ class BenchmarkTests(unittest.TestCase):
         self.assertEqual(report["strict_pass_rate"], 1)
         self.assertEqual(seen, [("gemini-2.5-flash", "https://generativelanguage.googleapis.com/v1beta/openai", "fake-test-key")] * 3)
 
+    def test_resume_retries_only_four_previous_api_errors(self):
+        subset = cases()[:10]
+        previous = [baseline_prediction(x) for x in subset[:6]]
+        previous += [{"case_id": x["case_id"], "abstained": True,
+                      "source_refs": [], "explanation": "API or parsing failure"} for x in subset[6:]]
+        with tempfile.TemporaryDirectory() as temp:
+            prior_path = Path(temp) / "prior.json"
+            prior_path.write_text(json.dumps(previous))
+            output = Path(temp) / "continued"
+            with patch.dict("os.environ", {"GEMINI_API_KEY": "fake-test-key"}), \
+                 patch("sys.argv", ["finance_benchmark", "run", "--provider", "gemini", "--limit", "10",
+                                    "--resume", str(prior_path), "--delay-seconds", "20", "--output", str(output)]), \
+                 patch("finance_benchmark.__main__.api_prediction", side_effect=lambda case, *_: baseline_prediction(case)) as call, \
+                 patch("finance_benchmark.__main__.time.sleep") as sleep:
+                main()
+            report = json.loads((output / "report.json").read_text())
+        self.assertEqual(call.call_count, 4)
+        self.assertEqual(sleep.call_count, 3)
+        self.assertEqual(report["evaluated_count"], 10)
+        self.assertEqual(report["strict_pass_rate"], 1)
+
 
 if __name__ == "__main__":
     unittest.main()
