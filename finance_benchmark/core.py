@@ -152,6 +152,8 @@ def markdown_report(report):
              "## Failures", ""]
     lines += [f"- `{r['case_id']}`: {', '.join(r['error_codes'])}" for r in failures] or ["No deterministic failures."]
     lines += ["", "## Not evaluated", ""]
-    lines += [f"- `{r['case_id']}`: {', '.join(r['error_codes'])}" for r in unevaluated] or ["None."]
+    lines += [f"- `{r['case_id']}`: {', '.join(r['error_codes'])}"
+              + (f" (HTTP {r['request_error']['status']})" if r.get("request_error", {}).get("status") else "")
+              for r in unevaluated] or ["None."]
     lines += ["", "## Interpretation", "", report["limitations"], ""]
     return "\n".join(lines)
