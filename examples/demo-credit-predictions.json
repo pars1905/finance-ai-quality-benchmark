@@ -1,0 +1,12 @@
+[
+  {
+    "case_id": "credit-current-ratio",
+    "value": 2,
+    "source_refs": [
+      "credit:current_assets",
+      "credit:current_liabilities"
+    ],
+    "explanation": "150 / 100 = 2.00.",
+    "abstained": false
+  }
+]
