@@ -3,6 +3,7 @@ import argparse
 import json
 import os
 import sys
+import time
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -40,14 +41,18 @@ def main():
     run.add_argument("--provider", choices=("baseline", "api", "gemini"), default="baseline")
     run.add_argument("--model", help="API model ID; Gemini defaults to gemini-2.5-flash")
     run.add_argument("--limit", type=int, default=30, help="Maximum cases to send to API (1–30)")
+    run.add_argument("--delay-seconds", type=float, default=0, help="Pause between API requests to respect rate limits")
     run.add_argument("--output", type=Path, default=Path("results"))
     check = sub.add_parser("evaluate", help="Score a JSON list of predictions")
     check.add_argument("predictions", type=Path)
+    check.add_argument("--limit", type=int, help="Score only the first N benchmark cases (1–30)")
     check.add_argument("--output", type=Path, default=Path("results"))
     args = parser.parse_args()
     if args.command == "run":
         if not 1 <= args.limit <= 30:
             parser.error("--limit must be between 1 and 30")
+        if args.delay_seconds < 0:
+            parser.error("--delay-seconds must not be negative")
         if args.provider == "baseline":
             predictions = [baseline_prediction(case) for case in cases()[:args.limit]]
         else:
@@ -64,18 +69,25 @@ def main():
                 if not model or not key:
                     parser.error("API runs require --model and AI_API_KEY")
             predictions = []
-            for case in cases()[:args.limit]:
+            for index, case in enumerate(cases()[:args.limit]):
+                if index and args.delay_seconds:
+                    time.sleep(args.delay_seconds)
                 try:
                     predictions.append(api_prediction(case, model, base_url, key))
                 except (ValueError, KeyError, urllib.error.URLError) as exc:
                     print(f"{case['case_id']}: {type(exc).__name__}: {exc}", file=sys.stderr)
-                    predictions.append({"case_id": case["case_id"], "abstained": True,
-                                        "source_refs": [], "explanation": "API or parsing failure"})
+                    status = exc.code if isinstance(exc, urllib.error.HTTPError) else None
+                    predictions.append({"case_id": case["case_id"], "request_error": {
+                        "type": "http" if status is not None else "transport_or_parse",
+                        "status": status}})
     else:
+        if args.limit is not None and not 1 <= args.limit <= 30:
+            parser.error("--limit must be between 1 and 30")
         predictions = json.loads(args.predictions.read_text(encoding="utf-8"))
         if not isinstance(predictions, list):
             parser.error("Prediction file must contain a JSON list")
-    report = evaluate(predictions, selected_cases=cases()[:args.limit] if args.command == "run" else None)
+    selected = cases()[:args.limit] if args.limit is not None else None
+    report = evaluate(predictions, selected_cases=selected)
     args.output.mkdir(parents=True, exist_ok=True)
     (args.output / "predictions.json").write_text(json.dumps(predictions, indent=2) + "\n", encoding="utf-8")
     (args.output / "report.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
