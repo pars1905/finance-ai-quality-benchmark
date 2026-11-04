@@ -6,6 +6,8 @@ from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 DATA = Path(__file__).resolve().parent.parent / "data" / "statements.json"
+REAL_DATA = Path(__file__).resolve().parent.parent / "data" / "real_filings_v1.json"
+DATASETS = ("synthetic-v1", "real-filings-v1")
 
 TASKS = {
     "gross_margin": ("2025 gross margin, percent", ("revenue_2025", "cost_of_sales_2025")),
@@ -35,7 +37,11 @@ def calculate(task, f):
     raise ValueError(f"Unknown task: {task}")
 
 
-def cases():
+def cases(dataset="synthetic-v1"):
+    if dataset == "real-filings-v1":
+        return json.loads(REAL_DATA.read_text(encoding="utf-8"))
+    if dataset != "synthetic-v1":
+        raise ValueError(f"Unknown dataset: {dataset}")
     result = []
     for company in statements():
         for task, (question, refs) in TASKS.items():
@@ -101,7 +107,7 @@ def score_case(case, prediction):
             "needs_expert_review": needs_review, "evaluated": True}
 
 
-def evaluate(predictions, selected_cases=None):
+def evaluate(predictions, selected_cases=None, dataset="synthetic-v1"):
     by_id = {}
     for prediction in predictions:
         if not isinstance(prediction, dict) or not isinstance(prediction.get("case_id"), str):
@@ -109,7 +115,7 @@ def evaluate(predictions, selected_cases=None):
         if prediction["case_id"] in by_id:
             raise ValueError(f"Duplicate case_id: {prediction['case_id']}")
         by_id[prediction["case_id"]] = prediction
-    all_cases = cases() if selected_cases is None else selected_cases
+    all_cases = cases(dataset) if selected_cases is None else selected_cases
     valid_ids = {case["case_id"] for case in all_cases}
     unknown = sorted(set(by_id) - valid_ids)
     if unknown:
@@ -118,7 +124,7 @@ def evaluate(predictions, selected_cases=None):
     n = len(results)
     evaluated = [r for r in results if r["evaluated"]]
     count = len(evaluated)
-    return {"dataset": "synthetic-v1", "case_count": n, "submitted": len(by_id),
+    return {"dataset": dataset, "case_count": n, "submitted": len(by_id),
             "evaluated_count": count, "api_error_count": sum("api_error" in r["error_codes"] for r in results),
             "coverage": count / n if n else None,
             "numeric_accuracy": sum(r["numeric_correct"] for r in evaluated) / count if count else None,
@@ -126,7 +132,9 @@ def evaluate(predictions, selected_cases=None):
             "strict_pass_rate": sum(r["pass"] for r in evaluated) / count if count else None,
             "expert_review_required": sum(r["needs_expert_review"] for r in results),
             "results": results,
-            "limitations": "Synthetic statements; explanation truthfulness requires human review. No real-world model performance claim."}
+            "limitations": ("Three curated excerpts from public filings, not full-document retrieval; calculations and citations need expert review before broader claims."
+                            if dataset == "real-filings-v1" else
+                            "Synthetic statements; explanation truthfulness requires human review. No real-world model performance claim.")}
 
 
 def markdown_report(report):
