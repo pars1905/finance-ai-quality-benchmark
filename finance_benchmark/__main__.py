@@ -36,6 +36,19 @@ def api_prediction(case, model, base_url, key):
     return answer
 
 
+def api_prediction_with_retry(case, model, base_url, key):
+    """Retry temporary server failures twice; preserve quota errors for later resumption."""
+    for attempt in range(3):
+        try:
+            return api_prediction(case, model, base_url, key)
+        except urllib.error.HTTPError as exc:
+            if exc.code not in (500, 503, 504) or attempt == 2:
+                raise
+            delay = 5 * 2 ** attempt
+            print(f"{case['case_id']}: HTTP {exc.code}; retrying in {delay}s", file=sys.stderr)
+            time.sleep(delay)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Finance AI Quality Benchmark")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -96,7 +109,7 @@ def main():
                     time.sleep(args.delay_seconds)
                 requests_sent += 1
                 try:
-                    predictions.append(api_prediction(case, model, base_url, key))
+                    predictions.append(api_prediction_with_retry(case, model, base_url, key))
                 except (ValueError, KeyError, urllib.error.URLError) as exc:
                     print(f"{case['case_id']}: {type(exc).__name__}: {exc}", file=sys.stderr)
                     status = exc.code if isinstance(exc, urllib.error.HTTPError) else None
