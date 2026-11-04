@@ -1,0 +1,12 @@
+[
+  {
+    "case_id": "fpna-revenue-growth",
+    "value": "25.00%",
+    "source_refs": [
+      "fpna:revenue_2024",
+      "fpna:revenue_2025"
+    ],
+    "explanation": "(100 - 80) / 80 * 100 = 25.00%.",
+    "abstained": false
+  }
+]
