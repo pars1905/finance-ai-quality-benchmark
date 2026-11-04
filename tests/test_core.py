@@ -52,6 +52,26 @@ class BenchmarkTests(unittest.TestCase):
         p["value"] = "not a number"
         self.assertFalse(score_case(case, p)["numeric_correct"])
 
+    def test_percentage_suffix_in_real_filing_answers(self):
+        items = cases("real-filings-v1")
+        predictions = [baseline_prediction(case) for case in items]
+        predictions[0]["value"] = "14.93%"
+        predictions[2]["value"] = "10.69%"
+        report = evaluate(predictions, dataset="real-filings-v1")
+        self.assertEqual(report["strict_pass_rate"], 1)
+        self.assertEqual(report["numeric_accuracy"], 1)
+
+    def test_percentage_suffix_rejected_for_ratio_and_malformed_values(self):
+        ratio_case = next(case for case in cases() if case["task"] == "current_ratio")
+        p = baseline_prediction(ratio_case)
+        p["value"] = f'{p["value"]}%'
+        self.assertFalse(score_case(ratio_case, p)["numeric_correct"])
+        percentage_case = cases("real-filings-v1")[0]
+        p = baseline_prediction(percentage_case)
+        for malformed in ("14.93%%", "14,93%", "NaN%", True):
+            p["value"] = malformed
+            self.assertFalse(score_case(percentage_case, p)["numeric_correct"])
+
     def test_duplicate_and_unknown_ids_rejected(self):
         p = baseline_prediction(cases()[0])
         with self.assertRaises(ValueError):
