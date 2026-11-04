@@ -1,0 +1,50 @@
+[
+  {
+    "case_id": "msft-2025-revenue-growth",
+    "company": "Microsoft Corporation",
+    "filing_form": "10-K",
+    "fiscal_year": 2025,
+    "accession": "0000950170-25-100235",
+    "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000095017025100235/msft-20250630.htm",
+    "source_location": "Item 7, Results of Operations, fiscal year comparison table; USD millions",
+    "question": "What was Microsoft revenue growth from fiscal 2024 to fiscal 2025, as a percent? Round to two decimal places.",
+    "evidence": [
+      {"source_ref": "msft-2025:revenue_2024", "text": "Revenue in fiscal 2024: USD 245,122 million."},
+      {"source_ref": "msft-2025:revenue_2025", "text": "Revenue in fiscal 2025: USD 281,724 million."}
+    ],
+    "required_source_refs": ["msft-2025:revenue_2024", "msft-2025:revenue_2025"],
+    "expected_value": "14.93"
+  },
+  {
+    "case_id": "aapl-2025-services-share",
+    "company": "Apple Inc.",
+    "filing_form": "10-K",
+    "fiscal_year": 2025,
+    "accession": "0000320193-25-000079",
+    "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019325000079/aapl-20250927.htm",
+    "source_location": "Item 7, Net Sales by Category, fiscal 2025; USD millions",
+    "question": "What percent of Apple's total fiscal 2025 net sales came from Services? Round to two decimal places.",
+    "evidence": [
+      {"source_ref": "aapl-2025:services_sales", "text": "Services net sales in fiscal 2025: USD 109,158 million."},
+      {"source_ref": "aapl-2025:total_net_sales", "text": "Total net sales in fiscal 2025: USD 416,161 million."}
+    ],
+    "required_source_refs": ["aapl-2025:services_sales", "aapl-2025:total_net_sales"],
+    "expected_value": "26.23"
+  },
+  {
+    "case_id": "tkc-2025-revenue-growth",
+    "company": "Turkcell Iletisim Hizmetleri A.S.",
+    "filing_form": "20-F",
+    "fiscal_year": 2025,
+    "accession": "0001104659-26-044740",
+    "source_url": "https://www.sec.gov/Archives/edgar/data/1071321/000110465926044740/tkc-20251231x20f.htm",
+    "source_location": "Consolidated profit or loss / revenue note, 2025 and comparative 2024, IAS 29, TRY thousands",
+    "question": "Using only the 2025 annual report's IAS 29-comparable revenue figures, what was Turkcell revenue growth from 2024 to 2025, as a percent? Round to two decimal places.",
+    "evidence": [
+      {"source_ref": "tkc-2025:revenue_2024_comparative", "text": "2024 comparative total revenue presented in the 2025 report: TRY 218,160,030 thousand (IAS 29 basis)."},
+      {"source_ref": "tkc-2025:revenue_2025", "text": "2025 total revenue: TRY 241,470,821 thousand (IAS 29 basis)."}
+    ],
+    "required_source_refs": ["tkc-2025:revenue_2024_comparative", "tkc-2025:revenue_2025"],
+    "expected_value": "10.69"
+  }
+]
