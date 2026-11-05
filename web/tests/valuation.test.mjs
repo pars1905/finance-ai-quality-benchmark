@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {calculate, median} from '../valuation.mjs';
 
 const input={price:24,fcff:1800,fcfe:1300,ebitda:2800,netIncome:1400,
@@ -61,4 +62,14 @@ test('transparent country overlays change all five method estimates',()=>{
   assert.equal(conflict.assumptions.growth,4);
   assert.equal(conflict.assumptions.wacc,17);
   assert.equal(conflict.assumptions.multipleFactor,0.7);
+});
+
+test('downloadable one-file input template runs all methods',()=>{
+  const template=JSON.parse(readFileSync(new URL('../sample-input.json',import.meta.url),'utf8'));
+  assert.equal(template.units,'millions');
+  assert.equal(template.company.includes('kurgusal'),true);
+  assert.equal('wacc' in template,false);
+  const output=calculate({...input,...template});
+  assert.deepEqual(output.errors,[]);
+  assert.equal(output.scenarios[1].applicable,5);
 });
