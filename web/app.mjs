@@ -74,8 +74,10 @@ $('dataFile').addEventListener('change',async event=>{
     if(data.units!=='millions')throw Error('Dosyada units alanı millions olmalı; tutarlar ve pay sayısı milyon cinsinden girilmeli.');
     if(!['TRY','USD','EUR'].includes(data.currency))throw Error('Para birimi TRY, USD veya EUR olmalı.');
     $('company').value=String(data.company||'');$('ticker').value=String(data.ticker||'');$('currency').value=data.currency;$('asOf').value=String(data.asOf||'');
-    for(const key of numeric)$(key).value=data[key]??(requiredFinancial.includes(key)?'':sampleDefaults[key]);
-    if(data.countryState&&COUNTRY_PRESETS.some(p=>p.key===data.countryState))$('countryState').value=data.countryState;
+    const country=COUNTRY_PRESETS.find(p=>p.key===data.countryState)||COUNTRY_PRESETS[0];
+    $('countryState').value=country.key;
+    const countryDefaults={countryGrowthShift:country.growthShift,countryRiskPremium:country.riskPremium,countryMultipleFactor:country.multipleFactor};
+    for(const key of numeric)$(key).value=data[key]??(requiredFinancial.includes(key)?'':countryDefaults[key]??sampleDefaults[key]);
     uploadedSource=String(data.source||file.name);$('dataStatus').textContent='Yüklendi: '+file.name+' · Dosyada olmayan büyüme, iskonto ve çarpan varsayımları örnek değerlerle dolduruldu. Bunları kontrol edin.';
     render(true);
   }catch(err){uploadedSource='';$('results').hidden=true;last=null;showErrors([err.message]);$('advanced').open=true}
