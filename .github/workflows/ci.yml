@@ -10,6 +10,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test web/tests/valuation.test.mjs
       - run: python -m unittest discover -s tests -v
       - run: python -m finance_benchmark run --provider baseline --output /tmp/finance-benchmark-report
       - run: python -m finance_benchmark evaluate examples/sample_predictions.json --output /tmp/finance-benchmark-sample
