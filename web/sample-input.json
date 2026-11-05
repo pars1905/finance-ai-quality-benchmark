@@ -1,0 +1,17 @@
+{
+  "_note": "Kurgusal ornek tutarlar. Gercek bir sirket icin tum rakamlari ve varsayimlari dogrulayin.",
+  "company": "Atlas Teknoloji A.S. (kurgusal)",
+  "ticker": "ORNEK",
+  "asOf": "2026-11-05",
+  "source": "Ornek finansal ozet; gercek kaynak degildir",
+  "currency": "TRY",
+  "units": "millions",
+  "price": 24,
+  "fcff": 1800,
+  "fcfe": 1300,
+  "ebitda": 2800,
+  "netIncome": 1400,
+  "bookEquity": 10000,
+  "netDebt": 4000,
+  "shares": 1000
+}
