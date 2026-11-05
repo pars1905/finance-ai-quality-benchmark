@@ -14,13 +14,27 @@
   </header>
   <main class="layout">
     <form id="form" class="panel input-panel" novalidate>
-      <h2>Şirket ve varsayımlar</h2><p class="muted">Örnek kurgusaldır. Gerçek şirket için rapor verilerini ve karşılaştırılabilir çarpanları siz girin.</p>
-      <h3>Şirket</h3><div class="fields">
-        <label class="wide">Şirket adı<input id="company" value="Atlas Teknoloji A.Ş. (kurgusal)"></label>
-        <label>Borsa kodu<input id="ticker" value="ORNEK"></label>
+      <h2>Hızlı başlangıç</h2><p class="muted">Hazır örneği hemen inceleyin. Kendi şirketiniz için finansal özet dosyası yükleyin.</p>
+      <div class="quick">
+        <label class="select-label">Veri kaynağı<select id="dataMode"><option value="sample">Hazır örnek · kurgusal şirket</option><option value="own">Kendi şirketimin verileri</option></select></label>
+        <div id="uploadBox" class="upload-box" hidden>
+          <label for="dataFile">Finansal özet dosyası (JSON)</label>
+          <input id="dataFile" type="file" accept=".json,application/json">
+          <p>Dosya tarayıcıda okunur; sunucuya gönderilmez. <a href="./sample-input.json" download>Örnek şablonu indir</a></p>
+        </div>
+        <div class="fields">
+          <label class="wide">Şirket adı<input id="company" value="Atlas Teknoloji A.Ş. (kurgusal)" readonly></label>
+          <label>Borsa kodu<input id="ticker" value="ORNEK" readonly></label>
+          <label>Piyasa fiyatı / pay<input id="price" type="number" step="any" value="24"></label>
+        </div>
+        <label class="select-label" style="margin-top:13px">Ülke koşulu<select id="countryState"><option value="normal">Olağan</option><option value="conflict">Savaş / çatışma</option><option value="ceasefire">Ateşkes</option><option value="peace">Barış anlaşması</option></select></label>
+        <p class="tip" id="dataStatus" role="status">Kurgusal örnek verilerle hesaplanıyor.</p>
+      </div>
+      <details id="advanced"><summary>Ayrıntılı finansal veriler ve varsayımlar</summary>
+      <p class="tip">Gerçek şirketlerde tutarların, dönemin, para biriminin ve pay sayısının uyumunu kontrol edin. Varsayılan oranlar yalnızca örnektir.</p>
+      <div class="fields">
         <label>Para birimi<select id="currency"><option>TRY</option><option>USD</option><option>EUR</option></select></label>
         <label>Veri tarihi<input id="asOf" type="date" value="2026-11-05"></label>
-        <label>Piyasa fiyatı / pay<input id="price" type="number" step="any" value="24"></label>
       </div>
       <h3>Finansal veriler</h3><p class="tip">Tutarlar milyon para birimi; seyreltilmiş pay sayısı milyon adettir. Sonuç pay başına para birimidir.</p><div class="fields">
         <label>Firma serbest nakit akışı (FCFF)<input id="fcff" type="number" step="any" value="1800"></label>
@@ -40,17 +54,17 @@
         <label>Benzer şirket FD/FAVÖK<input id="evEbitda" type="number" step="any" value="9"></label>
         <label class="wide">Benzer şirket PD/DD<input id="pb" type="number" step="any" value="2"></label>
       </div>
-      <h3>Ülke koşulları</h3><label class="select-label">Varsayımsal durum<select id="countryState"><option value="normal">Olağan koşullar</option><option value="conflict">Savaş / çatışma</option><option value="ceasefire">Ateşkes</option><option value="peace">Barış anlaşması</option></select></label>
+      <h3>Ülke etkisi</h3>
       <div class="country-box"><p class="tip">Etki değerleri örnektir, güncel ülke tahmini değildir. Düzenleyerek kendi varsayımınızı kurun.</p><div class="fields">
         <label>Büyüme etkisi (puan)<input id="countryGrowthShift" type="number" step="any" value="0"></label>
         <label>İskonto etkisi (puan)<input id="countryRiskPremium" type="number" step="any" value="0"></label>
         <label class="wide">Çarpan katsayısı<input id="countryMultipleFactor" type="number" step="any" value="1"></label>
-      </div></div>
+      </div></div></details>
       <div class="actions"><button class="primary" type="submit">Değerlemeyi hesapla →</button><button class="secondary" id="reset" type="button">Örneğe dön</button></div>
       <div id="errors" class="error" role="alert" hidden></div>
     </form>
-    <div class="results">
-      <aside class="notice"><strong>Demo ve varsayım aracı.</strong> Veriler otomatik çekilmez; bu çalışma yatırım tavsiyesi veya doğrulanmış hedef fiyat değildir. Gerçek şirket verilerini tarih, para birimi ve pay sayısı bakımından kontrol edin.</aside>
+    <div class="results" id="results">
+      <aside class="notice"><strong>Demo ve varsayım aracı.</strong> Hazır örnek kurgusaldır; gerçek şirket verileri dosyadan veya ayrıntılı alandan sağlanır. Bu çalışma yatırım tavsiyesi veya doğrulanmış hedef fiyat değildir.</aside>
       <section class="panel summary"><div><span class="eyebrow">Çalışma özeti</span><h2 id="resultCompany"></h2><p id="resultMeta"></p></div><div class="market">Girilen piyasa fiyatı <strong id="resultPrice"></strong></div></section>
       <div class="scenario-cards" id="scenarioCards" aria-label="Senaryo seçimi"></div>
       <section class="panel table-panel"><h2>Pay başına değer karşılaştırması</h2><p class="muted">Beş yöntem, aynı finansal veriler ve değişen varsayımlar.</p><div class="table-scroll"><table><thead><tr><th>Yöntem</th><th>Kötümser</th><th>Baz</th><th>İyimser</th></tr></thead><tbody id="valuationRows"></tbody></table></div><div id="methodWarnings"></div></section>
