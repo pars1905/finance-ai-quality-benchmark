@@ -2,21 +2,27 @@ import {calculate, COUNTRY_PRESETS, METHODS, SCENARIOS} from './valuation.mjs';
 
 const $=id=>document.getElementById(id);
 const numeric=['price','fcff','fcfe','ebitda','netIncome','bookEquity','netDebt','shares','growth','wacc','costEquity','terminalGrowth','pe','evEbitda','pb','countryGrowthShift','countryRiskPremium','countryMultipleFactor'];
-let selected='base',last=null;
+const requiredFinancial=['price','fcff','fcfe','ebitda','netIncome','bookEquity','netDebt','shares'];
+const sampleDefaults=Object.fromEntries([...numeric,'company','ticker','currency','asOf','countryState'].map(key=>[key,$(key).value]));
+let selected='base',last=null,uploadedSource='';
 const money=(n,c)=>n===null||!Number.isFinite(n)?'—':new Intl.NumberFormat('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2}).format(n)+' '+c;
 const decimal=n=>new Intl.NumberFormat('tr-TR',{maximumFractionDigits:2}).format(n);
 function element(tag,cls,content){const n=document.createElement(tag);if(cls)n.className=cls;if(content!==undefined)n.textContent=content;return n}
 function readInput(){
-  const input={company:$('company').value.trim()||'İsimsiz şirket',ticker:$('ticker').value.trim().toUpperCase()||'—',currency:$('currency').value,asOf:$('asOf').value,countryState:$('countryState').value};
+  const input={company:$('company').value.trim()||'İsimsiz şirket',ticker:$('ticker').value.trim().toUpperCase()||'—',currency:$('currency').value,asOf:$('asOf').value,countryState:$('countryState').value,dataMode:$('dataMode').value,source:uploadedSource};
   for(const key of numeric){const v=$(key).value.trim();input[key]=v===''?NaN:Number(v)}
   return input;
 }
 function showErrors(errors){const box=$('errors');box.hidden=!errors.length;box.replaceChildren();if(errors.length){box.append(element('strong','','Lütfen girdileri düzeltin:'));const list=element('ul');errors.forEach(t=>list.append(element('li','',t)));box.append(list)}}
-function render(){
-  const input=readInput(),output=calculate(input);showErrors(output.errors);if(output.errors.length)return;
+function render(reveal=false){
+  const input=readInput(),output=calculate(input);
+  const errors=[...output.errors];
+  if(input.dataMode==='own'&&(!$('company').value.trim()||!$('ticker').value.trim()||!input.asOf))errors.unshift('Şirket adı, borsa kodu ve veri tarihi gerekli.');
+  showErrors(errors);if(errors.length){$('results').hidden=true;last=null;if(reveal)$('advanced').open=true;return}
+  $('results').hidden=false;
   last={input,...output};
   $('resultCompany').textContent=input.company;
-  $('resultMeta').textContent=input.ticker+' · '+(input.asOf||'Tarih belirtilmedi')+' · Ülke koşulu: '+(COUNTRY_PRESETS.find(x=>x.key===input.countryState)?.name||'Özel');
+  $('resultMeta').textContent=input.ticker+' · '+(input.asOf||'Tarih belirtilmedi')+' · '+(input.dataMode==='sample'?'Kurgusal örnek':'Kullanıcı verisi')+' · Ülke koşulu: '+(COUNTRY_PRESETS.find(x=>x.key===input.countryState)?.name||'Özel');
   $('resultPrice').textContent=money(input.price,input.currency);
   const cards=$('scenarioCards');cards.replaceChildren();
   for(const s of output.scenarios){
@@ -45,13 +51,43 @@ function render(){
   const warnings=$('methodWarnings');warnings.replaceChildren();
   for(const m of METHODS){const item=focus.methods[m.key];if(item.reason)warnings.append(element('div','warning',m.name+': '+item.reason));if(item.terminalShare>0.75)warnings.append(element('div','warning',m.name+': değerin '+decimal(item.terminalShare*100)+'% kadarı terminal değere dayanıyor; büyüme ve iskonto varsayımlarını ayrıca sınayın.'))}
 }
+function modeChanged(){
+  const own=$('dataMode').value==='own';$('uploadBox').hidden=!own;
+  $('company').readOnly=!own;$('ticker').readOnly=!own;
+  if(own){
+    $('company').value='';$('ticker').value='';$('price').value='';$('asOf').value='';$('dataFile').value='';
+    for(const key of ['fcff','fcfe','ebitda','netIncome','bookEquity','netDebt','shares'])$(key).value='';
+    uploadedSource='';$('dataStatus').textContent='Finansal özet dosyanızı yükleyin veya ayrıntılı alanları açıp verileri girin.';
+    $('results').hidden=true;showErrors([]);last=null;
+  }else{
+    for(const [key,value] of Object.entries(sampleDefaults))$(key).value=value;
+    $('advanced').open=false;uploadedSource='';$('dataStatus').textContent='Kurgusal örnek verilerle hesaplanıyor.';render()
+  }
+}
+$('dataMode').addEventListener('change',modeChanged);
+$('dataFile').addEventListener('change',async event=>{
+  const file=event.target.files?.[0];if(!file)return;
+  try{
+    if(file.size>1000000)throw Error('Dosya 1 MB sınırını aşıyor.');
+    const data=JSON.parse(await file.text());
+    if(!data||Array.isArray(data)||typeof data!=='object')throw Error('Dosyada tek bir JSON nesnesi olmalı.');
+    if(data.units!=='millions')throw Error('Dosyada units alanı millions olmalı; tutarlar ve pay sayısı milyon cinsinden girilmeli.');
+    if(!['TRY','USD','EUR'].includes(data.currency))throw Error('Para birimi TRY, USD veya EUR olmalı.');
+    $('company').value=String(data.company||'');$('ticker').value=String(data.ticker||'');$('currency').value=data.currency;$('asOf').value=String(data.asOf||'');
+    for(const key of numeric)$(key).value=data[key]??(requiredFinancial.includes(key)?'':sampleDefaults[key]);
+    if(data.countryState&&COUNTRY_PRESETS.some(p=>p.key===data.countryState))$('countryState').value=data.countryState;
+    uploadedSource=String(data.source||file.name);$('dataStatus').textContent='Yüklendi: '+file.name+' · Dosyada olmayan büyüme, iskonto ve çarpan varsayımları örnek değerlerle dolduruldu. Bunları kontrol edin.';
+    render(true);
+  }catch(err){uploadedSource='';$('results').hidden=true;last=null;showErrors([err.message]);$('advanced').open=true}
+});
 $('countryState').addEventListener('change',()=>{
   const p=COUNTRY_PRESETS.find(x=>x.key===$('countryState').value);
   $('countryGrowthShift').value=p.growthShift;$('countryRiskPremium').value=p.riskPremium;$('countryMultipleFactor').value=p.multipleFactor;
   render();
 });
-$('form').addEventListener('submit',event=>{event.preventDefault();render()});
-$('reset').addEventListener('click',()=>{$('form').reset();selected='base';render()});
+$('form').addEventListener('submit',event=>{event.preventDefault();render(true)});
+$('reset').addEventListener('click',()=>{$('form').reset();selected='base';$('advanced').open=false;modeChanged()});
+$('price').addEventListener('change',()=>{if($('dataMode').value==='sample'||last)render()});
 $('print').addEventListener('click',()=>window.print());
 $('download').addEventListener('click',()=>{
   if(!last)return;
