@@ -15,7 +15,7 @@ All values in `data/statements.json` are fictional and in consistent arbitrary u
 
 ## Interactive public-equity valuation demo
 
-[Open the public valuation interface](https://finance-ai-quality-demo-osman.affableeucalyptus1.chatgpt.site). Enter a listed company's financial figures and comparable-company multiples to see **five per-share methods** across bearish, base and bullish assumptions:
+[Open the public valuation interface](https://finance-ai-quality-demo-osman.affableeucalyptus1.chatgpt.site). The visitor starts with a fictional ready-to-use example. For a real company, choose **My company's data** and load a single [financial summary JSON template](web/sample-input.json), or open the advanced manual fields. Only the source choice, company and market price, and country condition are visible initially. Missing growth, discount and peer-multiple assumptions in an uploaded file use clearly labeled illustrative defaults that should be reviewed before interpreting results. The browser reads the file locally and does not upload it. The interface shows **five per-share methods** across bearish, base and bullish assumptions:
 
 1. FCFF DCF: five years of firm free cash flow and a terminal value, discounted at WACC; subtract net debt.
 2. FCFE DCF: five years of equity free cash flow and a terminal value, discounted at cost of equity.
