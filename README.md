@@ -13,6 +13,18 @@ A small, reproducible benchmark for evaluating AI answers to financial-statement
 
 All values in `data/statements.json` are fictional and in consistent arbitrary units. The benchmark tests arithmetic and traceability, not accounting interpretation, financial advice or investment performance.
 
+## Interactive browser demo
+
+[Open the public interactive demo](https://finance-ai-quality-demo-osman.affableeucalyptus1.chatgpt.site). Visitors can switch between three fictional financial scenarios, change the answer and evidence IDs, and inspect the numeric and citation checks. The page is a browser-only demonstration: it runs locally in the visitor's browser, does not call an AI model or store submissions, and flags explanations for human review. Source: [web/index.html](web/index.html).
+
+To run the same static UI locally:
+
+```bash
+python -m http.server 8000 --directory web
+```
+
+Open http://localhost:8000 in your browser. The Python CLI remains the reference for reproducible JSON reports and live API evaluation.
+
 ## Three runnable customer conversation demos
 
 The [Turkish demo walkthrough](docs/three-customer-demos-tr.md) covers three fictional client scenarios: management reporting (correct answer), credit analysis (wrong number), and research review (wrong source reference). Sample responses are hand-authored to demonstrate the scorer; they are **not actual model outputs or customer engagements**.
